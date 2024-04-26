@@ -12,8 +12,8 @@ clock =  pygame.time.Clock()
 #класс мира
 class World():
     def __init__(self) -> None:
-        self.hero = Player(x=150, y=200, height=150, width=100, img='textures/stand_no_weapon/1.png', direction='right',
-               status='run', room=self.room1(), directory_stand='textures/stand_no_weapon/',
+        self.hero = Player(x=150, y=300, height=150, width=100, img='textures/stand_no_weapon/1.png', direction='right',
+               status='run', room=self.room3(), directory_stand='textures/stand_no_weapon/',
                         directory_run='textures/run_no_weapon/', health=100, world=self, speed=5) 
         self.sword_hero = Sword_player(
                         x=75, y=200, height=150, width=100, img='textures/stand_with_weapon/1.png', 
@@ -41,13 +41,12 @@ class World():
 
         chest = Chest(x=300, y=300, height=100, width=90, status='close', loot=sword, directory='textures/chest/chest.png/')
 
-        room = Room(objs=[chest, monster_mistake, monster_mistake2, slizn], land='test_room.csv', respawn=(150, 200)) 
+        room = Room(objs=[chest, monster_mistake, monster_mistake2, slizn], land='test_room.csv', respawn=(150, 200), zones=[]) 
 
-        door1 = Door(x=950, y=710, height=90, width=100, status='close', directory='textures/doors/tree_door.png/', teleport=self.room2())
+        door1 = Door(x=950, y=710, height=90, width=100, status='close', directory='textures/doors/tree_door.png/', teleport=self.room2(), new_x=150, new_y=200)
         room.objs.append(door1)
 
         room.build()
-
         return room
     
     def room2(self):
@@ -72,14 +71,26 @@ class World():
 
         chest = Chest(x=1000, y=150, height=100, width=90, status='close', loot=key, directory='textures/chest/chest.png/')
 
-        room = Room(objs=[chest, monster_purple, slizn, wall_door, pawn], land='test_room2.csv', respawn=(950, 710))
+        room = Room(objs=[chest, monster_purple, slizn, wall_door, pawn], land='test_room2.csv', respawn=(150, 200), zones=[])
         
-
+    
 
         room.build()
-
         return room
 
+    def room3(self):
+        room = Room(objs=[], land='test_room3.csv', respawn=(850, 810), zones=[])
+        room.build()
+        x=700
+        for i in range(11):
+            path = Floor(texture='textures/floor/path.png', x=x, y=345, height=60, width=60, angle=90)
+            room.load_land.append(path) 
+            x+=50 
+        telezone = Telezone(x=1250, y=345, height=60, width=60, teleport=self.room1(), texture='textures/floor/path.png', new_x=150, new_y=200, angle=90)
+        tree1 = Wall(texture='pixel_tree.png', x=200, y=550, height=200, width=250)
+        room.zones.append(telezone)
+        room.objs.append(tree1)
+        return room
 #класс персонажа
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, height, width, img, direction, status, room, directory_stand, directory_run, health, world, speed) -> None: 
@@ -244,7 +255,10 @@ class Player(pygame.sprite.Sprite):
                         if obj.status == 'close':
                             obj.door_open = True
                         if obj.status == 'open':
+                            self.x = obj.new_x
+                            self.y = obj.new_y
                             self.room = obj.teleport
+                            
 
             #взаимодействие с механической дверью           
             if isinstance(obj, Wall_door):
@@ -275,6 +289,18 @@ class Player(pygame.sprite.Sprite):
                     if keys[pygame.K_e]:
                         self.weapon_inventory.append(obj)
                         self.room.objs.remove(obj)
+        for zone in self.room.zones:
+            zone_centerx = zone.x+zone.width/2
+            zone_centery = zone.y+zone.height/2
+            offsetx = abs(player_centerx - zone_centerx)
+            offsety = abs(player_centery - zone_centery)
+            #взаимодействие с телепорт зоной
+            if isinstance(zone, Telezone):
+                if offsetx <= self.active_zone and offsety <= self.active_zone:
+                    self.x = zone.new_x
+                    self.y = zone.new_y
+                    self.room = zone.teleport
+                   
      
     def transform_to_sword(self):
         global player
@@ -635,8 +661,9 @@ class Sword_player(Player):
 #класс комнаты
 class Room():
     '''комната'''
-    def __init__(self, objs, land, respawn) -> None:
+    def __init__(self, objs, land, respawn, zones) -> None:
         self.objs = objs
+        self.zones = zones
         self.land = land 
         self.load_land = []
         self.respawn = respawn
@@ -644,6 +671,8 @@ class Room():
     def show(self):
         for floor in self.load_land:
             floor.show_image() 
+        for zone in self.zones:
+            zone.show_image()
 
     def build(self):
         with open(self.land, 'r') as file:
@@ -662,13 +691,15 @@ class Room():
                         self.load_land.append(Floor(texture='textures/floor/dirt_8.png', x=x, y=y, height=50, width=50))
                     elif el == 'R':
                         self.objs.append(Wall(texture='textures/wall/R_wall.png', x=x, y=y, height=50, width=50))
+                    elif el == 'G':
+                        self.load_land.append(Floor(texture='textures/floor/forest_grass.jpg', x=x, y=y, height=50, width=50))
                     x += 50
                 y += 50
 
 #класс пола
 class Floor():
     '''пол'''
-    def __init__(self, texture, x, y, height, width) -> None:
+    def __init__(self, texture, x, y, height, width, angle=0) -> None:
         self.texture = texture
         self.x = x
         self.y = y
@@ -677,6 +708,7 @@ class Floor():
         #получение изображения
         self.image = pygame.image.load(self.texture)
         self.image = pygame.transform.scale(self.image, (self.height, self.width)) 
+        self.image = pygame.transform.rotate(self.image, angle)
 
     def show_image(self):
         window.blit(self.image, (self.x, self.y))
@@ -822,7 +854,7 @@ class Label():
 
 #класс двери
 class Door():
-    def __init__(self, x, y, height, width, status, directory, teleport) -> None:
+    def __init__(self, x, y, height, width, status, directory, teleport, new_x, new_y) -> None:
         self.x = x
         self.y = y
         self.height = height
@@ -833,6 +865,8 @@ class Door():
         self.door_open = False
         self.teleport = teleport
         self.direction = 'left'
+        self.new_x = new_x
+        self.new_y = new_y
 
         #получение изобажения
         self.texture_name = self.get_files_names(directory)
@@ -895,8 +929,8 @@ class Door():
 
 #дверь механизм 
 class Wall_door(Door):
-    def __init__(self, x, y, height, width, status, directory, teleport, key_index) -> None:
-        super().__init__(x, y, height, width, status, directory, teleport)
+    def __init__(self, x, y, height, width, status, directory, teleport, key_index, new_x=None, new_y=None ) -> None:
+        super().__init__(x, y, height, width, status, directory, teleport, new_x, new_y)
         self.key_index = key_index
 
     def animation(self):
@@ -916,8 +950,23 @@ class Wall_door(Door):
         window.blit(self.image, (self.x, self.y))
         if self.door_open == True:
             self.animation() 
-            
 
+#зона перехода
+class Telezone():
+    def __init__(self, x, y, height, width, teleport, texture, new_x, new_y, angle=0) -> None:
+        self.x = x
+        self.y = y
+        self.height = height
+        self.width = width
+        self.teleport = teleport
+        self.new_x = new_x
+        self.new_y = new_y
+        #получение изображения
+        self.image = pygame.image.load(texture)
+        self.image = pygame.transform.scale(self.image, (self.height, self.width)) 
+        self.image = pygame.transform.rotate(self.image, angle)
+    def show_image(self):
+        window.blit(self.image, (self.x, self.y))
     
 #отоброжение текстур
 world = World()           
@@ -932,6 +981,7 @@ while True:
     for obj in player.room.objs:
         obj.show_image()
     player.show_image()
+    player.interact_with_items()
     #hero.show_image()
     player.gui.show_image() 
     clock.tick(60)
