@@ -13,7 +13,7 @@ clock =  pygame.time.Clock()
 class World():
     def __init__(self) -> None:
         self.hero = Player(x=150, y=300, height=150, width=100, img='textures/stand_no_weapon/1.png', direction='right',
-               status='run', room=self.room3(), directory_stand='textures/stand_no_weapon/',
+               status='run', room=self.room1(), directory_stand='textures/stand_no_weapon/',
                         directory_run='textures/run_no_weapon/', health=100, world=self, speed=5) 
         self.sword_hero = Sword_player(
                         x=75, y=200, height=150, width=100, img='textures/stand_with_weapon/1.png', 
@@ -24,15 +24,17 @@ class World():
 
         sword = Sword(height=40, width=40, x=340, y=340, img='pixel.sword.png')
 
+        key = Key(height=100, width=100, x=340, y=340, img='key.png', index=1)
+
         monster_mistake = Monster(x=675, y=650, height=150, width=100, img='textures/mistake_stand.png/0.png', direction='right',
                           status='run', directory_stand='textures/mistake_stand.png', directory_run='textures/mistake_walk',
                           directory_attack='textures/mistake_attack.png',
-                          road=[(500, 650), (675, 650), (675, 150)], health=8, directory_health='textures/hp', health_width=100, shift_health=35, speed=1, attention_zone=300, damage=1)
+                          road=[(500, 650), (675, 650), (675, 150)], health=15, directory_health='textures/hp', health_width=100, shift_health=35, speed=1, attention_zone=300, damage=1, loot=key)
 
         monster_mistake2 = Monster(x=975, y=650, height=150, width=100, img='textures/mistake_stand.png/0.png', direction='right',
                           status='run', directory_stand='textures/mistake_stand.png', directory_run='textures/mistake_walk',
                           directory_attack='textures/mistake_attack.png',
-                          road=[(900, 650), (1100, 650), (1100, 150)], health=8, directory_health='textures/hp', health_width=100, shift_health=35, speed=1, attention_zone=300, damage=1)
+                          road=[(900, 650), (1100, 650), (1100, 150)], health=15, directory_health='textures/hp', health_width=100, shift_health=35, speed=1, attention_zone=300, damage=1)
 
         slizn = Monster(x=350, y=350, height=50, width=50, img='textures/slizn/0.png', direction='right',
                           status='run', directory_stand='textures/slizn', directory_run='textures/slizn',
@@ -50,7 +52,9 @@ class World():
         return room
     
     def room2(self):
-        wall_door = Wall_door(x=900, y=600, height=100, width=100, status='close', directory='textures/door.png/', teleport=None, key_index=1)
+        wall_door = Wall_door(x=900, y=600, height=100, width=100, status='close', directory='textures/door.png/', teleport=None, key_index=1, world=self)
+
+        wall_door2 = Wall_door(x=850, y=700, height=100, width=100, status='close', directory='textures/door.png/', teleport=None, key_index=1, angle=90, world=self)
 
         slizn = Monster(x=350, y=350, height=50, width=50, img='textures/slizn/0.png', direction='right',
                           status='run', directory_stand='textures/slizn', directory_run='textures/slizn',
@@ -60,18 +64,18 @@ class World():
         pawn = Monster(x=350, y=150, height=80, width=50, img='textures/pawn_stay.png/0.png', direction='right', 
                        status='run', directory_stand='textures/pawn_stay.png', directory_run='textures/pawn_walk.png', 
                        directory_attack='textures/pawn_attack.png', 
-                       road=[(0, 150), (800, 150)], health=15, directory_health='textures/hp', health_width=50, shift_health=35, speed=5, attention_zone=500, damage=3, shift_health_y=-10)
+                       road=[(0, 150), (800, 150)], health=50, directory_health='textures/hp', health_width=50, shift_health=35, speed=5, attention_zone=500, damage=3, shift_health_y=-10)
 
         monster_purple = Monster(x=274, y=750, height=150, width=100, img='textures/purple_stay.png/0.png', direction='right',
                           status='run', directory_stand='textures/purple_stay.png', directory_run='textures/purple_walk.png',
                           directory_attack='textures/purple_attack.png',
-                          road=[(450, 350), (0, 350), (5, 750), (450, 750)], health=8, directory_health='textures/hp', health_width=100, shift_health=35, speed=2, attention_zone=400, damage=2)
+                          road=[(450, 350), (0, 350), (5, 750), (450, 750)], health=20, directory_health='textures/hp', health_width=100, shift_health=35, speed=2, attention_zone=400, damage=2)
 
         key = Key(height=100, width=100, x=340, y=340, img='key.png', index=1)
 
         chest = Chest(x=1000, y=150, height=100, width=90, status='close', loot=key, directory='textures/chest/chest.png/')
 
-        room = Room(objs=[chest, monster_purple, slizn, wall_door, pawn], land='test_room2.csv', respawn=(150, 200), zones=[])
+        room = Room(objs=[chest, monster_purple, slizn, wall_door, pawn, wall_door2], land='test_room2.csv', respawn=(950, 710), zones=[])
         
     
 
@@ -273,9 +277,9 @@ class Player(pygame.sprite.Sprite):
                             obj.door_open = True
                 if obj.status == 'open':
                     self.room.objs.remove(obj)
-                    obj = Floor(texture=obj.texture_name[-1], x=obj.x, y=obj.y, height=obj.height, width=obj.width)
+                    '''obj = Floor(texture=obj.texture_name[-1], x=obj.x, y=obj.y, height=obj.height, width=obj.width)
                     obj.image = pygame.transform.flip(obj.image, flip_x=True, flip_y=False)
-                    self.room.load_land.append(obj)
+                    self.room.load_land.append(obj)'''
 
             #взаимодействие с ключом
             if isinstance(obj, Key):
@@ -324,7 +328,7 @@ class Player(pygame.sprite.Sprite):
 
 #класс монстров
 class Monster():
-    def __init__(self, x, y, height, width, img, direction, status, directory_stand, directory_run, directory_attack,road, health, directory_health, health_width, shift_health, speed, attention_zone, damage, shift_health_y=0) -> None:
+    def __init__(self, x, y, height, width, img, direction, status, directory_stand, directory_run, directory_attack,road, health, directory_health, health_width, shift_health, speed, attention_zone, damage, loot=None, shift_health_y=0) -> None:
         self.x = x
         self.y = y
         self.height = height
@@ -345,6 +349,7 @@ class Monster():
         self.damage = damage
         self.shift_health_y = shift_health_y
         self.direction_road = 1  # Начальное направление изменения точки
+        self.loot = loot
 
         #получение изображения
         self.image = pygame.image.load(img) 
@@ -646,7 +651,12 @@ class Sword_player(Player):
                             obj.health -= 1
                             obj.textures_health['left'][0][0] = pygame.transform.scale(obj.textures_health['left'][0][0], (obj.health_width/obj.max_health*obj.health, 10))
                             if obj.health == 0:
+                                if obj.loot:
+                                    player.room.objs.append(obj.loot)
+                                    obj.loot.x = obj.x + 100
+                                    obj.loot.y = obj.y + 0 
                                 self.room.objs.remove(obj)
+                            
                             break
                         #удар по монстру(справа)
                     elif self.direction == 'right':
@@ -655,6 +665,10 @@ class Sword_player(Player):
                             obj.health -= 1
                             obj.textures_health['left'][0][0] = pygame.transform.scale(obj.textures_health['left'][0][0], (obj.health_width/obj.max_health*obj.health, 10))
                             if obj.health == 0:
+                                if obj.loot:
+                                    player.room.objs.append(obj.loot)
+                                    obj.loot.x = obj.x + 100
+                                    obj.loot.y = obj.y + 0 
                                 self.room.objs.remove(obj)
                             break             
 
@@ -854,7 +868,7 @@ class Label():
 
 #класс двери
 class Door():
-    def __init__(self, x, y, height, width, status, directory, teleport, new_x, new_y) -> None:
+    def __init__(self, x, y, height, width, status, directory, teleport, new_x, new_y, angle=0) -> None:
         self.x = x
         self.y = y
         self.height = height
@@ -867,6 +881,7 @@ class Door():
         self.direction = 'left'
         self.new_x = new_x
         self.new_y = new_y
+        self.angle = angle
 
         #получение изобажения
         self.texture_name = self.get_files_names(directory)
@@ -888,8 +903,9 @@ class Door():
                 image = pygame.transform.scale(image, (height, width))
                 if direction == 'left':                   
                     image = pygame.transform.flip(image, True, False)  
+                image = pygame.transform.rotate(image, self.angle)
                 image_mask = pygame.mask.from_surface(image)
-                loaded_textures[direction].append([image, image_mask]) 
+                loaded_textures[direction].append([image, image_mask])
         return loaded_textures
     
     def show_image(self):
@@ -929,10 +945,10 @@ class Door():
 
 #дверь механизм 
 class Wall_door(Door):
-    def __init__(self, x, y, height, width, status, directory, teleport, key_index, new_x=None, new_y=None ) -> None:
-        super().__init__(x, y, height, width, status, directory, teleport, new_x, new_y)
+    def __init__(self, x, y, height, width, status, directory, teleport, key_index, world, new_x=None, new_y=None, angle=0) -> None:
+        super().__init__(x, y, height, width, status, directory, teleport, new_x, new_y, angle)
         self.key_index = key_index
-
+        self.world = world
     def animation(self):
         try:
             self.image = self.texture[self.direction][self.counter][0]
@@ -945,6 +961,11 @@ class Wall_door(Door):
         if self.counter == len(self.texture[self.direction]):
             self.door_open = False 
             self.status = 'open' 
+            a = self
+            self = Floor(texture=obj.texture_name[-1], x=obj.x, y=obj.y, height=obj.height, width=obj.width)
+            self.image = pygame.transform.flip(self.image, flip_x=True, flip_y=False)
+            self.image = pygame.transform.rotate(self.image, a.angle)
+            player.room.load_land.append(self)
     
     def show_image(self):
         window.blit(self.image, (self.x, self.y))
