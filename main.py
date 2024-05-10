@@ -13,7 +13,7 @@ clock =  pygame.time.Clock()
 class World():
     def __init__(self) -> None:
         self.hero = Player(x=150, y=300, height=150, width=100, img='textures/stand_no_weapon/1.png', direction='right',
-               status='run', room=self.room1(), directory_stand='textures/stand_no_weapon/',
+               status='run', room=self.room3(), directory_stand='textures/stand_no_weapon/',
                         directory_run='textures/run_no_weapon/', health=100, world=self, speed=5) 
         self.sword_hero = Sword_player(
                         x=75, y=200, height=150, width=100, img='textures/stand_with_weapon/1.png', 
@@ -77,24 +77,41 @@ class World():
 
         room = Room(objs=[chest, monster_purple, slizn, wall_door, pawn, wall_door2], land='test_room2.csv', respawn=(950, 710), zones=[])
         
-    
+        telezone = Telezone(x=0, y=250, height=1, width=1, teleport=self.room4(), texture='textures/floor/dirt_8.png', new_x=1181, new_y=150, angle=90)
+        room.zones.append(telezone)
 
         room.build()
         return room
 
     def room3(self):
+        trees = []
+        sosnas_coord = [(1100, 300), (178, 603), (752, 440), (1105, 598)]
+        oaks_coord = [(393, 605), (868, 590), (824, 130)]
+        for x,y in sosnas_coord:
+            trees.append(Tree(texture='textures/tree/sosna.png', x=x, y=y, height=488/4, width=800/4, tree_mask='textures/tree/sosna_mask.png'))
+        for x,y in oaks_coord:
+            trees.append(Tree(texture='textures/tree/oak.png', x=x, y=y, height=606/4, width=800/4, tree_mask='textures/tree/oak_mask.png'))
+
+
         room = Room(objs=[], land='test_room3.csv', respawn=(850, 810), zones=[])
+        room.objs += trees
         room.build()
         x=700
         for i in range(11):
             path = Floor(texture='textures/floor/path.png', x=x, y=345, height=60, width=60, angle=90)
             room.load_land.append(path) 
             x+=50 
-        telezone = Telezone(x=1250, y=345, height=60, width=60, teleport=self.room1(), texture='textures/floor/path.png', new_x=150, new_y=200, angle=90)
-        tree1 = Wall(texture='pixel_tree.png', x=200, y=550, height=200, width=250)
+        telezone = Telezone(x=0, y=350, height=1, width=1, teleport=self.room2(), texture='textures/floor/dirt_8.png', new_x=1181, new_y=673, angle=90)
         room.zones.append(telezone)
-        room.objs.append(tree1)
         return room
+
+    def room4(self):
+        room = Room(objs=[], land='corridor.csv', respawn=(850, 100), zones=[])
+        room.build()
+        telezone = Telezone(x=0, y=250, height=1, width=1, teleport=self.room1(), texture='textures/floor/dirt_8.png', new_x=150, new_y=200, angle=90)
+        room.zones.append(telezone)
+        return room
+        
 #класс персонажа
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, height, width, img, direction, status, room, directory_stand, directory_run, health, world, speed) -> None: 
@@ -989,6 +1006,15 @@ class Telezone():
     def show_image(self):
         window.blit(self.image, (self.x, self.y))
     
+class Tree(Floor):
+    def __init__(self, texture, x, y, height, width, tree_mask, angle=0) -> None:
+        super().__init__(texture, x, y, height, width, angle)
+    
+        self.tree_mask = pygame.image.load(tree_mask) 
+        self.tree_mask = pygame.transform.scale(self.tree_mask, (height, width)) 
+        self.image_mask = pygame.mask.from_surface(self.tree_mask)
+
+
 #отоброжение текстур
 world = World()           
 
@@ -996,14 +1022,16 @@ player = world.hero
 #основной игровой цикл (абстракция)
 while True:
     for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            x,y = event.pos
+            print(x,y)
         if event.type == pygame.QUIT:
             sys.exit()
     player.room.show()
+    player.show_image()
     for obj in player.room.objs:
         obj.show_image()
-    player.show_image()
     player.interact_with_items()
-    #hero.show_image()
     player.gui.show_image() 
     clock.tick(60)
     pygame.display.update() 
